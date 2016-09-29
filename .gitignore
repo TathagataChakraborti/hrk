@@ -1,10 +1,6 @@
+# emotiv proprietary
+
 # clean folder
-output
-output.sas
-sas_plan
-*r-*.pddl
-obs.dat
-*.stats
 stdout.txt
 *~
 *'#'
