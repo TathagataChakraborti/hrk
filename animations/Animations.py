@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 '''
-Animation Classes.
-Tathagata. 9/29/16.
+Topic   :: Animation Classes
+Project :: CSE 591 - Human Robot Kumbaya
+Author  :: Tathagata Chakraborti
+Date    :: 09/29/2016
 '''
 
-import sys, os, time
+import sys, os, time, datetime
 import random, argparse
 
 import numpy             as np
@@ -27,12 +29,16 @@ class Animation:
     def getName(self):
         return self.__class__.__name__
 
-    def simulate(self):
-        animation = FuncAnimation(self.fig, self.__render__, interval=10)
+    def simulate(self, id = 0):
+        self._data_id = id
+        animation     = FuncAnimation(self.fig, self.__render__, interval=10, save_count=10)
         plt.show()
 
     def __render__(self):
         raise NotImplementedError()
+
+    def __log__(self):
+        os.system('echo {} >> ./data/log_{}.dat'.format(datetime.datetime.now().isoformat(), self._data_id))
 
     
 '''
@@ -68,6 +74,9 @@ class Rain(Animation):
         
     def __render__(self, frame_number):
 
+        if frame_number > 10:
+            exit()
+
         if self.freeze_flag:
             time.sleep(0.5)
             self.freeze_flag = False
@@ -94,6 +103,8 @@ class Rain(Animation):
             self.scat.set_facecolors('red')
             self.freeze_flag = True
 
+            self.__log__()
+
         else:
 
             self.fig.patch.set_facecolor('gray')
@@ -118,7 +129,10 @@ class Grid(Animation):
         zvals  = np.random.rand(8,8)*10-5
 
         if random.random() < self.probability: cmap = colors.ListedColormap(['white', 'black', 'red'])
-        else:                                  cmap = colors.ListedColormap(['red', 'white', 'black'])
+        else:
+
+            cmap = colors.ListedColormap(['red', 'white', 'black'])
+            self.__log__()
         
         bounds = [0,0,8,8]
         norm   = colors.BoundaryNorm(bounds, cmap.N)
@@ -155,6 +169,8 @@ class Arrow(Animation):
             plt.axis('off')
             img = random.choice([self.img_up, self.img_down, self.img_left, self.img_right])
             img = plt.imshow(img)
+
+            self.__log__()
             
         else:
 
