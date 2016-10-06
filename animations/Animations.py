@@ -8,7 +8,7 @@ Date    :: 09/29/2016
 '''
 
 import sys, os, time, datetime
-import random, argparse
+import random, argparse, threading
 
 import numpy             as np
 import matplotlib.pyplot as plt
@@ -24,23 +24,50 @@ Class :: basic animation class
 class Animation:
 
     def __init__(self, probability):
+
+        with open('log.dat', 'w') as clear_log: pass
         self.probability = probability
         
     def getName(self):
         return self.__class__.__name__
 
-    def simulate(self, id = 0):
-        self._data_id = id
-        animation     = FuncAnimation(self.fig, self.__render__, interval=10, save_count=10)
+    def simulate(self):
+        animation = FuncAnimation(self.fig, self.__render__, interval=10, save_count=10)
         plt.show()
 
     def __render__(self):
         raise NotImplementedError()
 
     def __log__(self):
-        os.system('echo {} >> ./data/log_{}.dat'.format(datetime.datetime.now().isoformat(), self._data_id))
+        os.system('echo {} >> log.dat'.format(datetime.datetime.now().isoformat()))
 
     
+'''
+Class :: Dummy prints 1/666
+'''
+
+class Dummy(Animation):
+
+    def __init__(self, probability = 0.9):
+        Animation.__init__(self, probability)
+        
+    def simulate(self):
+        while True: self.__render__()
+
+    def __render__(self):
+
+        if random.random() > self.probability:
+
+            print 666
+            self.__log__()
+            
+        else:
+
+            print 1
+
+        time.sleep(1)
+            
+        
 '''
 Class  :: rain + thunder/blood!
 Source :: adopted from matplotlib rain animation by Nicolas P. Rougier
@@ -48,7 +75,7 @@ Source :: adopted from matplotlib rain animation by Nicolas P. Rougier
 
 class Rain(Animation):
     
-    def __init__(self, probability):
+    def __init__(self, probability = 0.99):
         
         Animation.__init__(self, probability)
 
@@ -74,7 +101,7 @@ class Rain(Animation):
         
     def __render__(self, frame_number):
 
-        if frame_number > 10:
+        if frame_number > 100:
             exit()
 
         if self.freeze_flag:
@@ -196,6 +223,7 @@ def main():
 
         animation_object = eval(args.animation.capitalize())(args.probability)
         animation_object.simulate()
+        print 666
         
     else: parser.print_help()
         

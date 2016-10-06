@@ -9,18 +9,13 @@ Date    :: 09/29/2016
 
 print "Loading..."
 
-from animations.Animations import *
-
-animation_option    = 'rain'
-oddball_probability = 0.99
-animation_object    = eval(animation_option.capitalize())(oddball_probability)
-
-_DATA_ID            = random.randint(0, 100000)
-
+import datetime
 import sys,os
 import time
 import ctypes
 import threading
+
+from animations.Animations import *
 
 from ctypes import cdll
 from ctypes import CDLL
@@ -56,52 +51,54 @@ targetChannelList = { 0  : 'COUNTER',
                       23 : 'MARKER',
                       24 : 'SYNC_SIGNAL' }
 
-libEDK            = cdll.LoadLibrary("./Github_Advanced/bin/x64/edk.dll")
-write             = sys.stdout.write
-eEvent            = libEDK.IEE_EmoEngineEventCreate()
-eState            = libEDK.IEE_EmoStateCreate()
-userID            = c_uint(0)
-nSamples          = c_uint(0)
-nSam              = c_uint(0)
-nSamplesTaken     = pointer(nSamples)
-data              = pointer(c_double(0))
-user              = pointer(userID)
-composerPort      = c_uint(1726)
-secs              = c_float(1)
-datarate          = c_uint(0)
-readytocollect    = False
-option            = c_int(0)
-state             = c_int(0)
+def data_acquisition_loop():
 
-input             = ''
-option            = int(raw_input("Press '1' to start collecting data >> "))
+    libEDK            = cdll.LoadLibrary("./Github_Advanced/bin/x64/edk.dll")
+    write             = sys.stdout.write
+    eEvent            = libEDK.IEE_EmoEngineEventCreate()
+    eState            = libEDK.IEE_EmoStateCreate()
+    userID            = c_uint(0)
+    nSamples          = c_uint(0)
+    nSam              = c_uint(0)
+    nSamplesTaken     = pointer(nSamples)
+    data              = pointer(c_double(0))
+    user              = pointer(userID)
+    composerPort      = c_uint(1726)
+    secs              = c_float(1)
+    datarate          = c_uint(0)
+    readytocollect    = False
+    state             = c_int(0)
+    input             = ''
 
-if not libEDK.IEE_EngineConnect("Emotiv Systems-5"):
-    print "Emotiv Engine start up failed."
+    if libEDK.IEE_EngineConnect("Emotiv Systems-5"):
+        print "Emotiv Engine start up failed."
+        exit()
+
+    with open('EEG.csv', 'w') as clean_file:
+        print "Writing to EEG.csv..."
+        
+    f = open('EEG.csv', 'w')
+    print >> f, ['LOG'] + [targetChannelList[key] for key in sorted(targetChannelList.keys())]
     
-print "Writing to ./data/EEG_{}.csv...".format(_DATA_ID)
+    hData   = libEDK.IEE_DataCreate()
+    libEDK.IEE_DataSetBufferSizeInSec(secs)
 
-f = open('./data/EEG_{}.csv'.format(_DATA_ID), 'w')
-print >> f, ['LOG'] + [targetChannelList[key] for key in sorted(targetChannelList.keys())]
-    
-hData   = libEDK.IEE_DataCreate()
-libEDK.IEE_DataSetBufferSizeInSec(secs)
-
-def __data_acquisition_loop__():
-
+    cc = 0
     while True:
 
+        cc   += 1
         state = libEDK.IEE_EngineGetNextEvent(eEvent)
+        
         if not state:
 
             eventType = libEDK.IEE_EmoEngineEventGetType(eEvent)
             libEDK.IEE_EmoEngineEventGetUserId(eEvent, user)
-
+        
             if eventType == 16:
                 print "User added"
                 libEDK.IEE_DataAcquisitionEnable(userID,True)
                 readytocollect = True
-
+            
                 
         if readytocollect:    
             
@@ -114,27 +111,32 @@ def __data_acquisition_loop__():
                 nSam=nSamplesTaken[0]
                 arr=(ctypes.c_double*nSamplesTaken[0])()
                 ctypes.cast(arr, ctypes.POINTER(ctypes.c_double))
-
+            
                 for sampleIdx in range(nSamplesTaken[0]): 
                 
+                    print >>f, datetime.datetime.now().isoformat(), ",",
+
                     for i in sorted(targetChannelList.keys()):
-
-                        libEDK.IEE_DataGet(hData, i, byref(arr), nSam)
-                        print >>f, datetime.datetime.now().isoformat(), arr[sampleIdx], ",",
                     
+                        libEDK.IEE_DataGet(hData, i, byref(arr), nSam)
+                        print >>f, arr[sampleIdx], ",",
+                
                     print >>f,'\n'
-
+                
         time.sleep(1)
+        if cc > 10:
+            break
+
+    libEDK.IEE_DataFree(hData)
+    libEDK.IEE_EngineDisconnect()
+    libEDK.IEE_EmoStateFree(eState)
+    libEDK.IEE_EmoEngineEventFree(eEvent)
 
 
-thread_ = threading.Thread(target = __data_acquisition_loop__, args = [])
+
+thread_ = threading.Thread(target = data_acquisition_loop, args = [])
 thread_.start()
 
-animation_object.simulate(_DATA_ID)
-
-libEDK.IEE_DataFree(hData)
-
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------
-libEDK.IEE_EngineDisconnect()
-libEDK.IEE_EmoStateFree(eState)
-libEDK.IEE_EmoEngineEventFree(eEvent)
+animation_object = Rain(probability = 0.95)
+animation_object.simulate()
+#data_acquisition_loop()
