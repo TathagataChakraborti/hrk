@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 '''
-Topic   :: EEG Epoc+ data logger
+Topic   :: Emotiv Epoc+ raw eeg data logger
 Project :: CSE 591 - Human Robot Kumbaya
 Author  :: Tathagata Chakraborti
 Date    :: 09/29/2016
@@ -51,9 +51,13 @@ targetChannelList = { 0  : 'COUNTER',
                       23 : 'MARKER',
                       24 : 'SYNC_SIGNAL' }
 
+
+run_animation_flag    = True
+start_animation_flag  = False
+
 def data_acquisition_loop():
 
-    libEDK            = cdll.LoadLibrary("./Github_Advanced/bin/x64/edk.dll")
+    libEDK            = cdll.LoadLibrary("./Github_Advanced/bin/x86/edk.dll")
     write             = sys.stdout.write
     eEvent            = libEDK.IEE_EmoEngineEventCreate()
     eState            = libEDK.IEE_EmoStateCreate()
@@ -77,16 +81,24 @@ def data_acquisition_loop():
     with open('EEG.csv', 'w') as clean_file:
         print "Writing to EEG.csv..."
         
-    f = open('EEG.csv', 'w')
-    print >> f, ['LOG'] + [targetChannelList[key] for key in sorted(targetChannelList.keys())]
+    out_file = open('EEG.csv', 'w')
+    header   = ['LOG'] + [targetChannelList[key] for key in sorted(targetChannelList.keys())]
+
+    for item in header:
+ 		print >>out_file, item, ",",
+
+    print >>out_file, '\n'
     
     hData   = libEDK.IEE_DataCreate()
     libEDK.IEE_DataSetBufferSizeInSec(secs)
 
-    cc = 0
-    while True:
+    check   = raw_input("Press <enter> to begin experiment >>")
 
-        cc   += 1
+    global start_animation_flag
+    start_animation_flag = True
+
+    while start_animation_flag:
+
         state = libEDK.IEE_EngineGetNextEvent(eEvent)
         
         if not state:
@@ -99,7 +111,7 @@ def data_acquisition_loop():
                 libEDK.IEE_DataAcquisitionEnable(userID,True)
                 readytocollect = True
             
-                
+			                
         if readytocollect:    
             
             libEDK.IEE_DataUpdateHandle(0, hData)
@@ -114,18 +126,17 @@ def data_acquisition_loop():
             
                 for sampleIdx in range(nSamplesTaken[0]): 
                 
-                    print >>f, datetime.datetime.now().isoformat(), ",",
+                    print >>out_file, datetime.datetime.now().isoformat(), ",",
 
                     for i in sorted(targetChannelList.keys()):
                     
                         libEDK.IEE_DataGet(hData, i, byref(arr), nSam)
-                        print >>f, arr[sampleIdx], ",",
+                        print >>out_file, arr[sampleIdx], ",",
                 
-                    print >>f,'\n'
+                    print >>out_file, '\n',
                 
         time.sleep(1)
-        if cc > 10:
-            break
+        print start_animation_flag
 
     libEDK.IEE_DataFree(hData)
     libEDK.IEE_EngineDisconnect()
@@ -133,10 +144,40 @@ def data_acquisition_loop():
     libEDK.IEE_EmoEngineEventFree(eEvent)
 
 
-
 thread_ = threading.Thread(target = data_acquisition_loop, args = [])
 thread_.start()
 
-animation_object = Rain(probability = 0.95)
+while not start_animation_flag:
+    pass
+
+animation_object = Grid(probability = 0.9)
 animation_object.simulate()
-#data_acquisition_loop()
+print 666
+start_animation_flag = False
+
+'''
+main method
+'''
+
+def main():
+
+    parser = argparse.ArgumentParser(description = '''This is the main method. EEG logger. ''',
+                                     epilog      = '''Usage >> ./emotiv_logger.py -a rain -p 0.99''')
+
+    parser.add_argument('-a', '--animation',    type=str,   help="run animation; options - rain, grid, arrow")
+    parser.add_argument('-p', '--probability',  type=float, help="probability of oddball")
+    args = parser.parse_args()
+
+    if args.animation:
+
+        animation_object = eval(args.animation.capitalize())(args.probability)
+        animation_object.simulate()
+        print 666
+        
+    else: parser.print_help()
+        
+
+if __name__ == '__main__':
+    main()
+
+    

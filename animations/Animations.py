@@ -7,6 +7,8 @@ Author  :: Tathagata Chakraborti
 Date    :: 09/29/2016
 '''
 
+print "Loading packages ..."
+
 import sys, os, time, datetime
 import random, argparse, threading
 
@@ -26,13 +28,17 @@ class Animation:
     def __init__(self, probability):
 
         with open('log.dat', 'w') as clear_log: pass
+
         self.probability = probability
+        self.interval    = 0
+        self.frames      = 0
+        self.data_id     = 0
         
     def getName(self):
         return self.__class__.__name__
 
     def simulate(self):
-        animation = FuncAnimation(self.fig, self.__render__, interval=10, save_count=10)
+        self.animation = FuncAnimation(self.fig, self.__render__, interval=1000, frames=7, repeat=False)
         plt.show()
 
     def __render__(self):
@@ -102,7 +108,7 @@ class Rain(Animation):
     def __render__(self, frame_number):
 
         if frame_number > 100:
-            exit()
+            exit(0)
 
         if self.freeze_flag:
             time.sleep(0.5)
@@ -137,6 +143,8 @@ class Rain(Animation):
             self.fig.patch.set_facecolor('gray')
             self.scat.set_facecolors('none')
 
+        print 666
+
         
 '''
 Class :: grid + random flashes
@@ -155,18 +163,19 @@ class Grid(Animation):
 
         zvals  = np.random.rand(8,8)*10-5
 
-        if random.random() < self.probability: cmap = colors.ListedColormap(['white', 'black', 'red'])
-        else:
+        if random.random() > self.probability: 
 
             cmap = colors.ListedColormap(['red', 'white', 'black'])
             self.__log__()
+
+        else:
+
+            cmap = colors.ListedColormap(['white', 'black', 'red'])
         
         bounds = [0,0,8,8]
         norm   = colors.BoundaryNorm(bounds, cmap.N)
 
         img    = plt.imshow(zvals,interpolation='nearest', cmap = cmap,norm=norm)
-
-        time.sleep(1)
 
         
 '''

@@ -1,7 +1,14 @@
 # emotiv proprietary
-Github_Advanced/*
+Github_Advanced/bin/*
+Github_Advanced/lib/*
+Github_Advanced/include/*
+
+# data files
+*.csv
+*log*
 
 # clean folder
+*stackdump*
 stdout.txt
 *~
 *'#'
