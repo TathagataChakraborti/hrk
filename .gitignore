@@ -6,6 +6,7 @@ Github_Advanced/include/*
 # data files
 *.csv
 *log*
+*edf*
 
 # clean folder
 *stackdump*

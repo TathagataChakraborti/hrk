@@ -258,7 +258,7 @@ class Arrow(Animation):
 
             img = random.choice([self.img_up, self.img_down, self.img_left, self.img_right])
             img = plt.imshow(img)
-
+            
             self.__log__(_POSITIVE_MARKER)
             
             self.freeze_flag = True
