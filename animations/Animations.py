@@ -4,10 +4,10 @@
 Topic   :: Animation Classes
 Project :: CSE 591 - Human Robot Kumbaya
 Author  :: Tathagata Chakraborti
-Date    :: 09/29/2016
+Date    :: 10/07/2016
 '''
 
-print "Loading packages ..."
+print "Loading animation ..."
 
 import sys, os, time, datetime
 import random, argparse, threading
@@ -20,32 +20,57 @@ from   matplotlib           import colors
 
 
 '''
+Global variables
+'''
+
+_SAVE_DATA_PATH   = 'data'
+_PORT_WRITER_PATH = 'Port_Write'
+
+_PORT_NAME        = 'COM9'
+
+_START_MARKER     = 0
+_POSITIVE_MARKER  = 1
+_NEGATIVE_MARKER  = 2
+_END_MARKER       = 4
+
+
+'''
 Class :: basic animation class
 '''
 
 class Animation:
 
-    def __init__(self, probability):
+    def __init__(self, data_id, probability, duration):
 
-        with open('log.dat', 'w') as clear_log: pass
-
-        self.probability = probability
-        self.interval    = 0
-        self.frames      = 0
-        self.data_id     = 0
+        self.data_id      = data_id
+        self.log_file     = '{}/log_{}.dat'.format(_SAVE_DATA_PATH, self.data_id)
         
+        self.probability  = probability
+        self.duration     = duration
+        
+        with open(self.log_file, 'w') as clear_log: pass
+
+    def __set_parameters__(self, interval = 1000):
+
+        self.interval     = interval
+        self.frames       = self.duration*1000/self.interval
+        self.probability += 0.1 * (1 - self.interval / 1000.0)
+
+        self.__log__(_START_MARKER)
+
     def getName(self):
         return self.__class__.__name__
 
     def simulate(self):
-        self.animation = FuncAnimation(self.fig, self.__render__, interval=1000, frames=7, repeat=False)
+        self.animation = FuncAnimation(self.fig, self.__render__, interval=self.interval, frames=self.frames, repeat=False)
         plt.show()
 
     def __render__(self):
         raise NotImplementedError()
 
-    def __log__(self):
-        os.system('echo {} >> log.dat'.format(datetime.datetime.now().isoformat()))
+    def __log__(self, marker_id):
+        os.system('{}/Port_Write {} {}').format(_PORT_WRITER_PATH, _PORT_NAME, marker_id)
+        os.system('echo {} {} >> {}'.format(datetime.datetime.now().isoformat(), marker_id, self.log_file))
 
     
 '''
@@ -54,24 +79,36 @@ Class :: Dummy prints 1/666
 
 class Dummy(Animation):
 
-    def __init__(self, probability = 0.9):
-        Animation.__init__(self, probability)
+    def __init__(self, data_id, probability, duration):
+        Animation.__init__(self, data_id, probability, duration)
+        self.__set_parameters__()
         
     def simulate(self):
-        while True: self.__render__()
 
-    def __render__(self):
+        frame_number = 0
+
+        while frame_number <= self.frames:
+
+            self.__render__()
+
+            if frame_number == self.frames - 1:
+                self.__log__(_END_MARKER)
+            
+            time.sleep(self.interval/1000.0)
+            frame_number += 1
+
+            
+    def __render__(self, frame_number):
 
         if random.random() > self.probability:
 
-            print 666
-            self.__log__()
-            
+            print "Dummy - 666"
+            self.__log__(_POSITIVE_MARKER)
+
         else:
 
-            print 1
-
-        time.sleep(1)
+            print "Dummy - 1"
+            self.__log__(_NEGATIVE_MARKER)
             
         
 '''
@@ -81,9 +118,9 @@ Source :: adopted from matplotlib rain animation by Nicolas P. Rougier
 
 class Rain(Animation):
     
-    def __init__(self, probability = 0.99):
+    def __init__(self, data_id, probability, duration):
         
-        Animation.__init__(self, probability)
+        Animation.__init__(self, data_id, probability, duration)
 
         self.freeze_flag = False
 
@@ -103,12 +140,10 @@ class Rain(Animation):
                                       s=self.rain_drops['size'], lw=0.5, edgecolors=self.rain_drops['color'],
                                       facecolors='none')
         
+        self.__set_parameters__(100)
 
-        
+          
     def __render__(self, frame_number):
-
-        if frame_number > 100:
-            exit(0)
 
         if self.freeze_flag:
             time.sleep(0.5)
@@ -136,27 +171,31 @@ class Rain(Animation):
             self.scat.set_facecolors('red')
             self.freeze_flag = True
 
-            self.__log__()
+            self.__log__(_POSITIVE_MARKER)
 
         else:
 
             self.fig.patch.set_facecolor('gray')
             self.scat.set_facecolors('none')
 
-        print 666
-
+            self.__log__(_NEGATIVE_MARKER)
+            
+        if frame_number == self.frames - 1:
+            self.__log__(_END_MARKER)
         
+            
 '''
 Class :: grid + random flashes
 '''
 
 class Grid(Animation):
 
-    def __init__(self, probability = 0.9):
+    def __init__(self, data_id, probability, duration):
 
-        Animation.__init__(self, probability)        
+        Animation.__init__(self, data_id, probability, duration)        
 
         self.fig  = plt.figure(figsize=(8,8))
+        self.__set_parameters__()
         
         
     def __render__(self, frame_number):
@@ -166,17 +205,20 @@ class Grid(Animation):
         if random.random() > self.probability: 
 
             cmap = colors.ListedColormap(['red', 'white', 'black'])
-            self.__log__()
+            self.__log__(_POSITIVE_MARKER)
 
         else:
 
             cmap = colors.ListedColormap(['white', 'black', 'red'])
+            self.__log__(_NEGATIVE_MARKER)
         
         bounds = [0,0,8,8]
         norm   = colors.BoundaryNorm(bounds, cmap.N)
 
-        img    = plt.imshow(zvals,interpolation='nearest', cmap = cmap,norm=norm)
+        img    = plt.imshow(zvals, interpolation='nearest', cmap=cmap, norm=norm)
 
+        if frame_number == self.frames - 1:
+            self.__log__(_END_MARKER)
         
 '''
 Class :: random directions
@@ -184,9 +226,9 @@ Class :: random directions
 
 class Arrow(Animation):
 
-    def __init__(self, probability = 0.9):
+    def __init__(self, data_id, probability, duration):
 
-        Animation.__init__(self, probability)
+        Animation.__init__(self, data_id, probability, duration)
 
         self.img_up    = plt.imread('cache/arrows/up.png')
         self.img_down  = plt.imread('cache/arrows/down.png')
@@ -196,6 +238,7 @@ class Arrow(Animation):
         self.fig       = plt.figure(figsize=(8,8))
 
         self.fig.patch.set_facecolor('white')
+        self.__set_parameters__()
         
         
     def __render__(self, frame_number):
@@ -203,16 +246,19 @@ class Arrow(Animation):
         if random.random() > self.probability:
 
             plt.axis('off')
+
             img = random.choice([self.img_up, self.img_down, self.img_left, self.img_right])
             img = plt.imshow(img)
 
-            self.__log__()
+            self.__log__(_POSITIVE_MARKER)
             
         else:
 
             plt.clf()
+            self.__log__(_NEGATIVE_MARKER)
 
-        time.sleep(1)
+        if frame_number == self.frames - 1:
+            self.__log__(_END_MARKER)
         
             
 '''
@@ -224,15 +270,20 @@ def main():
     parser = argparse.ArgumentParser(description = '''This is the main method. Interface to animation classes''',
                                      epilog      = '''Usage >> ./main.py -a rain -p 0.99''')
 
-    parser.add_argument('-a', '--animation',    type=str,   help="run animation; options - rain, grid, arrow")
-    parser.add_argument('-p', '--probability',  type=float, help="probability of oddball")
+
+    parser.add_argument('-a', '--animation',    type=str,             help="run animation; options - rain, grid, arrow, number, dummy")
+    parser.add_argument('-p', '--probability',  type=float,           help="probability of oddball (default=0.9)")
+    parser.add_argument('-d', '--duration',     type=int,             help="duration of the animation (in seconds, default=60)")
+
     args = parser.parse_args()
 
     if args.animation:
 
-        animation_object = eval(args.animation.capitalize())(args.probability)
+        if not args.probability: args.probability = 0.9
+        if not args.duration:    args.duration    = 10
+
+        animation_object = eval(args.animation.capitalize())(0, args.probability, args.duration)
         animation_object.simulate()
-        print 666
         
     else: parser.print_help()
         

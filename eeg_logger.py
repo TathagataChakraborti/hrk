@@ -4,16 +4,15 @@
 Topic   :: Emotiv Epoc+ raw eeg data logger
 Project :: CSE 591 - Human Robot Kumbaya
 Author  :: Tathagata Chakraborti
-Date    :: 09/29/2016
+Date    :: 10/07/2016
 '''
 
-print "Loading..."
+print "Loading packages..."
 
-import datetime
-import sys,os
-import time
+import sys,os, random
 import ctypes
 import threading
+import time, datetime
 
 from animations.Animations import *
 
@@ -26,6 +25,10 @@ from ctypes import c_char_p
 from ctypes import c_float
 from ctypes import c_double
 from ctypes import byref
+
+'''
+Global variables
+'''
 
 targetChannelList = { 0  : 'COUNTER',
                       1  : 'INTERPOLATED',
@@ -51,6 +54,8 @@ targetChannelList = { 0  : 'COUNTER',
                       23 : 'MARKER',
                       24 : 'SYNC_SIGNAL' }
 
+
+__RECORDING_DATA_ID__ = random.randint(1,9999)
 
 run_animation_flag    = True
 start_animation_flag  = False
@@ -78,10 +83,9 @@ def data_acquisition_loop():
         print "Emotiv Engine start up failed."
         exit()
 
-    with open('EEG.csv', 'w') as clean_file:
-        print "Writing to EEG.csv..."
+    print "Writing to EEG.csv..."
         
-    out_file = open('EEG.csv', 'w')
+    out_file = open('./data/EEG_{}.csv'.format(__RECORDING_DATA_ID__), 'w')
     header   = ['LOG'] + [targetChannelList[key] for key in sorted(targetChannelList.keys())]
 
     for item in header:
@@ -136,7 +140,6 @@ def data_acquisition_loop():
                     print >>out_file, '\n',
                 
         time.sleep(1)
-        print start_animation_flag
 
     libEDK.IEE_DataFree(hData)
     libEDK.IEE_EngineDisconnect()
@@ -144,36 +147,47 @@ def data_acquisition_loop():
     libEDK.IEE_EmoEngineEventFree(eEvent)
 
 
-thread_ = threading.Thread(target = data_acquisition_loop, args = [])
-thread_.start()
-
-while not start_animation_flag:
-    pass
-
-animation_object = Grid(probability = 0.9)
-animation_object.simulate()
-print 666
-start_animation_flag = False
-
 '''
 main method
 '''
 
 def main():
 
-    parser = argparse.ArgumentParser(description = '''This is the main method. EEG logger. ''',
-                                     epilog      = '''Usage >> ./emotiv_logger.py -a rain -p 0.99''')
+    parser = argparse.ArgumentParser(description = '''This is the main method for the EEG data logger. ''',
+                                     epilog      = '''Usage >> ./emotiv_logger.py -a rain -p 0.99 -d 60''')
 
-    parser.add_argument('-a', '--animation',    type=str,   help="run animation; options - rain, grid, arrow")
-    parser.add_argument('-p', '--probability',  type=float, help="probability of oddball")
+    parser.add_argument('-a', '--animation',    type=str,             help="run animation; options - rain, grid, arrow, number, dummy")
+    parser.add_argument('-p', '--probability',  type=float,           help="probability of oddball (default=0.9)")
+    parser.add_argument('-d', '--duration',     type=int,             help="duration of the animation (in seconds, default=60)")
+    parser.add_argument('-t', '--testbench',    action='store_true',  help="use Xavier Testbench to record data")
+
     args = parser.parse_args()
 
     if args.animation:
 
-        animation_object = eval(args.animation.capitalize())(args.probability)
+        if not args.probability: args.probability = 0.9
+        if not args.duration:    args.duration    = 10
+
+        animation_object = eval(args.animation.capitalize())(__RECORDING_DATA_ID, probability, duration)
         animation_object.simulate()
-        print 666
-        
+
+        if args.testbench:
+
+            terminal_prompt      = raw_input("Start recording on Xavier Testbench >>")
+            start_animation_flag = True
+
+        else:
+                
+            thread_ = threading.Thread(target = data_acquisition_loop, args = [])
+            thread_.start()
+
+        while not start_animation_flag:
+            pass
+
+        animation_object = eval(args.animation.capitalize())(__RECORDING_DATA_ID__, probability, duration)
+        animation_object.simulate()
+        start_animation_flag = False
+
     else: parser.print_help()
         
 
