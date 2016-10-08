@@ -56,8 +56,6 @@ targetChannelList = { 0  : 'COUNTER',
 
 
 __RECORDING_DATA_ID__ = random.randint(1,9999)
-
-run_animation_flag    = True
 start_animation_flag  = False
 
 def data_acquisition_loop():
@@ -83,9 +81,9 @@ def data_acquisition_loop():
         print "Emotiv Engine start up failed."
         exit()
 
-    print "Writing to EEG.csv..."
+    print "Writing to data\EEG_{}.csv...".format(__RECORDING_DATA_ID__)
         
-    out_file = open('./data/EEG_{}.csv'.format(__RECORDING_DATA_ID__), 'w')
+    out_file = open('{}\EEG_{}.csv'.format('C:\hrk\data', __RECORDING_DATA_ID__), 'w')
     header   = ['LOG'] + [targetChannelList[key] for key in sorted(targetChannelList.keys())]
 
     for item in header:
@@ -158,18 +156,17 @@ def main():
 
     parser.add_argument('-a', '--animation',    type=str,             help="run animation; options - rain, grid, arrow, number, dummy")
     parser.add_argument('-p', '--probability',  type=float,           help="probability of oddball (default=0.9)")
-    parser.add_argument('-d', '--duration',     type=int,             help="duration of the animation (in seconds, default=60)")
+    parser.add_argument('-d', '--duration',     type=int,             help="duration of the animation (in seconds, default=10)")
     parser.add_argument('-t', '--testbench',    action='store_true',  help="use Xavier Testbench to record data")
 
     args = parser.parse_args()
 
+    global start_animation_flag
+   
     if args.animation:
 
         if not args.probability: args.probability = 0.9
         if not args.duration:    args.duration    = 10
-
-        animation_object = eval(args.animation.capitalize())(__RECORDING_DATA_ID, probability, duration)
-        animation_object.simulate()
 
         if args.testbench:
 
@@ -183,9 +180,10 @@ def main():
 
         while not start_animation_flag:
             pass
-
-        animation_object = eval(args.animation.capitalize())(__RECORDING_DATA_ID__, probability, duration)
+ 
+        animation_object = eval(args.animation.capitalize())(__RECORDING_DATA_ID__, args.probability, args.duration)
         animation_object.simulate()
+
         start_animation_flag = False
 
     else: parser.print_help()

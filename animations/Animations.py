@@ -23,12 +23,13 @@ from   matplotlib           import colors
 Global variables
 '''
 
-_SAVE_DATA_PATH   = 'data'
-_PORT_WRITER_PATH = 'Port_Write'
+_PACKAGE_PATH     = 'C:/hrk/animations/cache'
+_SAVE_DATA_PATH   = 'C:\hrk\data'
+_PORT_WRITER_PATH = 'C:\hrk'
 
 _PORT_NAME        = 'COM9'
 
-_START_MARKER     = 0
+_START_MARKER     = 3
 _POSITIVE_MARKER  = 1
 _NEGATIVE_MARKER  = 2
 _END_MARKER       = 4
@@ -43,12 +44,10 @@ class Animation:
     def __init__(self, data_id, probability, duration):
 
         self.data_id      = data_id
-        self.log_file     = '{}/log_{}.dat'.format(_SAVE_DATA_PATH, self.data_id)
+        self.log_file     = '{}\log_{}.dat'.format(_SAVE_DATA_PATH, self.data_id)
         
         self.probability  = probability
         self.duration     = duration
-        
-        with open(self.log_file, 'w') as clear_log: pass
 
     def __set_parameters__(self, interval = 1000):
 
@@ -65,11 +64,11 @@ class Animation:
         self.animation = FuncAnimation(self.fig, self.__render__, interval=self.interval, frames=self.frames, repeat=False)
         plt.show()
 
-    def __render__(self):
+    def __render__(self, frame_number):
         raise NotImplementedError()
 
     def __log__(self, marker_id):
-        os.system('{}/Port_Write {} {}').format(_PORT_WRITER_PATH, _PORT_NAME, marker_id)
+        os.system('{}\PortWrite.exe {} {}'.format(_PORT_WRITER_PATH, _PORT_NAME, marker_id))
         os.system('echo {} {} >> {}'.format(datetime.datetime.now().isoformat(), marker_id, self.log_file))
 
     
@@ -87,14 +86,15 @@ class Dummy(Animation):
 
         frame_number = 0
 
-        while frame_number <= self.frames:
+        while frame_number < self.frames:
 
-            self.__render__()
+            self.__render__(frame_number)
+
+            time.sleep(self.interval/1000.0)
 
             if frame_number == self.frames - 1:
                 self.__log__(_END_MARKER)
             
-            time.sleep(self.interval/1000.0)
             frame_number += 1
 
             
@@ -182,6 +182,7 @@ class Rain(Animation):
             
         if frame_number == self.frames - 1:
             self.__log__(_END_MARKER)
+            self.fig.patch.set_facecolor('black')
         
             
 '''
@@ -219,7 +220,9 @@ class Grid(Animation):
 
         if frame_number == self.frames - 1:
             self.__log__(_END_MARKER)
-        
+            self.fig.patch.set_facecolor('black')
+
+            
 '''
 Class :: random directions
 '''
@@ -230,18 +233,24 @@ class Arrow(Animation):
 
         Animation.__init__(self, data_id, probability, duration)
 
-        self.img_up    = plt.imread('cache/arrows/up.png')
-        self.img_down  = plt.imread('cache/arrows/down.png')
-        self.img_left  = plt.imread('cache/arrows/left.png')
-        self.img_right = plt.imread('cache/arrows/right.png')
+        self.freeze_flag = False
+        
+        self.img_up      = plt.imread('{}/arrows/up.png'.format(_PACKAGE_PATH))
+        self.img_down    = plt.imread('{}/arrows/down.png'.format(_PACKAGE_PATH))
+        self.img_left    = plt.imread('{}/arrows/left.png'.format(_PACKAGE_PATH))
+        self.img_right   = plt.imread('{}/arrows/right.png'.format(_PACKAGE_PATH))
 
-        self.fig       = plt.figure(figsize=(8,8))
+        self.fig         = plt.figure(figsize=(8,8))
 
         self.fig.patch.set_facecolor('white')
         self.__set_parameters__()
         
         
     def __render__(self, frame_number):
+
+        if self.freeze_flag:
+            time.sleep(0.5)
+            self.freeze_flag = False
 
         if random.random() > self.probability:
 
@@ -252,13 +261,57 @@ class Arrow(Animation):
 
             self.__log__(_POSITIVE_MARKER)
             
+            self.freeze_flag = True
+            
         else:
-
+            
             plt.clf()
             self.__log__(_NEGATIVE_MARKER)
 
         if frame_number == self.frames - 1:
             self.__log__(_END_MARKER)
+            self.fig.patch.set_facecolor('black')
+        
+            
+class Number(Animation):
+
+    def __init__(self, data_id, probability, duration):
+
+        Animation.__init__(self, data_id, probability, duration)
+
+        self.images = []
+        for i in range(1,10):
+            self.images.append(plt.imread('{}/numbers/{}.png'.format(_PACKAGE_PATH, i)))
+
+        self.number    = 2
+        self.fig       = plt.figure(figsize=(8,8))
+
+        self.fig.patch.set_facecolor('white')
+        self.__set_parameters__()
+        
+        
+    def __render__(self, frame_number):
+        
+        plt.clf()
+        plt.axis('off')
+
+        if random.random() > self.probability:
+
+            img = self.images[self.number-1]
+            self.__log__(_POSITIVE_MARKER)
+            
+        else:
+
+            img = random.choice(self.images)
+            self.__log__(_NEGATIVE_MARKER)
+
+        img = plt.imshow(img, cmap=plt.cm.Reds_r)
+
+        time.sleep(1)
+
+        if frame_number == self.frames - 1:
+            self.__log__(_END_MARKER)
+            self.fig.patch.set_facecolor('black')
         
             
 '''
