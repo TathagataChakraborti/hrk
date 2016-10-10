@@ -50,7 +50,7 @@ class monitor:
         #tf_listener = tf.TransformListener()
         #if self.tf_listener.frameExists(marker):
         try:
-            print "Marker exists for", marker
+            #print "Marker exists for", marker
             marker_pos, marker_orient = self.tf_listener.lookupTransform('/base_link', marker,rospy.Time(0) )
             #print marker_pos
         #except Exception as exc:
@@ -58,7 +58,7 @@ class monitor:
 
         except:
             #time.sleep(1)
-            print "Reached here for marker", marker
+            #print "Reached here for marker", marker
             try:
                 marker_pos, marker_orient = self.tf_listener.lookupTransform('/base_link', marker, rospy.Time(0))
             except:
@@ -89,6 +89,7 @@ class monitor:
             for marker in self.location_markers:
                 marker_pos, marker_orient = self.get_marker_position(marker)
                 self.loc_marker_pos[marker] = list(marker_pos)
+                self.current_state_pos[marker] = list(marker_pos)
             self.first_time_table_flag = False
 
     def monitor(self):

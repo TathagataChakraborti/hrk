@@ -13,16 +13,16 @@ import actionlib
 from moveit_python import MoveGroupInterface, PlanningSceneInterface
 
 # DELTAS
-PICKUP_DELTA_PRE = [-0.025, 0.0, 0.30]
-PICKUP_DELTA_CORE = [-0.025, 0.0, 0.17]
-PICKUP_DELTA_POST = [-0.025, 0.0, 0.30]
-PUTDOWN_DELTA_PRE = [-0.025, 0.0, 0.30]
-PUTDOWN_DELTA_CORE = [-0.025, 0.025, 0.22]
-PUTDOWN_DELTA_POST = [-0.025, 0.025, 0.30]
+PICKUP_DELTA_PRE = [-0.05, -0.02, 0.30]
+PICKUP_DELTA_CORE = [-0.05, -0.02, 0.15]
+PICKUP_DELTA_POST = [-0.05, -0.02, 0.30]
+PUTDOWN_DELTA_PRE = [-0.04, -0.02, 0.30]
+PUTDOWN_DELTA_CORE = [-0.04, -0.02, 0.19]
+PUTDOWN_DELTA_POST = [-0.04, -0.02, 0.30]
 
 #GRIPPER ORIENTATION
-PICKUP_ORIENTATION = [-0.072, 0.661, -0.018, 0.747]
-PUTDOWN_ORIENTATION = [-0.072, 0.661, -0.018, 0.747]
+PICKUP_ORIENTATION = [0.468, 0.519, -0.438, 0.566] # [-0.072, 0.661, -0.018, 0.747]
+PUTDOWN_ORIENTATION = [0.468, 0.519, -0.438, 0.566] #[-0.072, 0.661, -0.018, 0.747]
 
 
 class RobotActionExecutor:
@@ -46,8 +46,8 @@ class RobotActionExecutor:
             time.sleep(1)
             self.initial_pos, self.initial_orient = tf_listener.lookupTransform('/base_link', '/gripper_link', rospy.Time(0))
         initial_bound = 0.015
-        #self.scene = moveit_python.PlanningSceneInterface('/base_link')
-        #self.scene.addBox("table", 1, 1, 0.5, loc_marker_pos[self.available_table_locations[0]][0] + 0.5, loc_marker_pos[self.available_table_locations[0]][1] + 0.3, loc_marker_pos[self.available_table_locations[0]][2] - 0.3)
+        self.scene = moveit_python.PlanningSceneInterface('/base_link')
+        self.scene.addBox("table", 1, 1, 0.5, loc_marker_pos[self.available_table_locations[0]][0] + 0.5, loc_marker_pos[self.available_table_locations[0]][1] + 0.3, loc_marker_pos[self.available_table_locations[0]][2] - 0.3)
         self.client = MoveGroupInterface("arm_with_torso", "base_link")
         self.joints = ["torso_lift_joint", "shoulder_pan_joint", "shoulder_lift_joint", "upperarm_roll_joint",
                   "elbow_flex_joint", "forearm_roll_joint", "wrist_flex_joint", "wrist_roll_joint"]
