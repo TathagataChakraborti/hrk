@@ -1,6 +1,10 @@
 #!/usr/bin/python           # This is server.py file
 
 import socket               # Import socket module
+import os
+import time
+import datetime
+
 _PORT_WRITER_PATH = 'C:\hrk'
 
 _PORT_NAME        = 'COM9'
@@ -13,7 +17,6 @@ BUFFER_SIZE = 1024
 
 def log(marker_id):
     os.system('{}\PortWrite.exe {} {}'.format(_PORT_WRITER_PATH, _PORT_NAME, marker_id))
-    os.system('echo {} {} >> {}'.format(datetime.datetime.now().isoformat(), marker_id, self.log_file))
 
 
 s = socket.socket()         # Create a socket object
@@ -26,13 +29,12 @@ old_timestamp = ''
 while True:
    c, addr = s.accept()     # Establish connection with client.
    #print 'Got connection from', addr
-   data = ''
-   curr_chunk = c.recv(1)
-   while curr_chunk:
-   	data += curr_chunk
-   	curr_chunk = c.recv(1)
-   data_parts = data.split('@')
-   if old_timestamp != data_parts[0]:
-   	  log(int(data_parts[1]))
-   	  old_timestamp = data_parts[0]
+   data = c.recv(1)
+   #curr_chunk = c.recv(1)
+   #while curr_chunk:
+   #	data += curr_chunk
+   #	curr_chunk = c.recv(1)
+   if data.strip() == '':
+       continue
+   log(int(data.strip()))
    c.close()                # Close the connection

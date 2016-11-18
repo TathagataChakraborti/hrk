@@ -54,9 +54,14 @@ targetChannelList = { 0  : 'COUNTER',
                       23 : 'MARKER',
                       24 : 'SYNC_SIGNAL' }
 
-
 __RECORDING_DATA_ID__ = random.randint(1,9999)
 start_animation_flag  = False
+online_casting_flag   = False
+
+
+'''
+Method :: data acquisition loop
+'''
 
 def data_acquisition_loop():
 
@@ -87,7 +92,7 @@ def data_acquisition_loop():
     header   = ['LOG'] + [targetChannelList[key] for key in sorted(targetChannelList.keys())]
 
     for item in header:
- 		print >>out_file, item, ",",
+ 	print >>out_file, item, ",",
 
     print >>out_file, '\n'
     
@@ -130,12 +135,18 @@ def data_acquisition_loop():
                 
                     print >>out_file, datetime.datetime.now().isoformat(), ",",
 
-                    for i in sorted(targetChannelList.keys()):
+                    channel_data = []
                     
+                    for i in sorted(targetChannelList.keys()):
+
                         libEDK.IEE_DataGet(hData, i, byref(arr), nSam)
                         print >>out_file, arr[sampleIdx], ",",
-                
+
+                        if i > 2 and i < 17:
+                            channel_data.append(str(arr[sampleIdx]))
+                        
                     print >>out_file, '\n',
+                    print ' '.join(channel_data)
                 
         time.sleep(1)
 
@@ -144,9 +155,10 @@ def data_acquisition_loop():
     libEDK.IEE_EmoStateFree(eState)
     libEDK.IEE_EmoEngineEventFree(eEvent)
 
+    
 
 '''
-main method
+Method :: main
 '''
 
 def main():
@@ -154,10 +166,11 @@ def main():
     parser = argparse.ArgumentParser(description = '''This is the main method for the EEG data logger. ''',
                                      epilog      = '''Usage >> ./emotiv_logger.py -a rain -p 0.99 -d 60''')
 
-    parser.add_argument('-a', '--animation',    type=str,             help="run animation; options - rain, grid, arrow, number, dummy")
+    parser.add_argument('-a', '--animation',    type=str,             help="run animation; options - rain, grid, arrow, number, dummy, real")
     parser.add_argument('-p', '--probability',  type=float,           help="probability of oddball (default=0.9)")
     parser.add_argument('-d', '--duration',     type=int,             help="duration of the animation (in seconds, default=10)")
     parser.add_argument('-t', '--testbench',    action='store_true',  help="use Xavier Testbench to record data")
+    parser.add_argument('-o', '--online',       action='store_true',  help="run online mode")
 
     args = parser.parse_args()
 
@@ -180,10 +193,16 @@ def main():
 
         while not start_animation_flag:
             pass
- 
-        animation_object = eval(args.animation.capitalize())(__RECORDING_DATA_ID__, args.probability, args.duration)
-        animation_object.simulate()
 
+        try:
+
+            animation_object = eval(args.animation.capitalize())(__RECORDING_DATA_ID__, args.probability, args.duration)
+            animation_object.simulate()
+
+        except:
+
+            raw_input("Press <enter> to stop recording >>")
+        
         start_animation_flag = False
 
     else: parser.print_help()

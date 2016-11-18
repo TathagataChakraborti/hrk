@@ -9,7 +9,7 @@ Date    :: 10/07/2016
 
 print "Loading animation ..."
 
-import sys, os, time, datetime
+import sys, os, time, datetime, copy
 import random, argparse, threading
 
 import numpy             as np
@@ -302,12 +302,14 @@ class Number(Animation):
             
         else:
 
-            img = random.choice(self.images)
+            temp_image_list = copy.deepcopy(self.images)
+            temp_image_list.pop(self.number-1)
+            img             = random.choice(temp_image_list)
             self.__log__(_NEGATIVE_MARKER)
 
         img = plt.imshow(img, cmap=plt.cm.Reds_r)
 
-        time.sleep(1)
+        #time.sleep(1)
 
         if frame_number == self.frames - 1:
             self.__log__(_END_MARKER)
