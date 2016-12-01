@@ -1,0 +1,6 @@
+(pickup blue)
+(stack blue green)
+(pickup pink)
+(stack pink blue)
+(form3tower pink blue green)
+; cost = 5 (unit cost)

@@ -224,7 +224,7 @@ def extract_raw_features(data, do_PCA = False, do_normalize = False):
     
     if do_PCA:
 
-        pca = PCA(n_components=5, svd_solver='full')
+        pca = PCA(n_components=20, svd_solver='full')
         pca.fit(x)
         x   = pca.transform(x)
 
