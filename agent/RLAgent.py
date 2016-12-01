@@ -26,13 +26,15 @@ class RLAgent(RandomAgent):
 
         RandomAgent.__init__(self, args)
 
-        self.__agentName__ = 'RLAgent'
+        if not args.boot:
+
+            self.__agentName__ = 'RLAgent'
+    
+            self.alpha         = args.alpha
+            self.gamma         = args.gamma
+            self.epsilon       = args.epsilon
         
-        self.alpha         = args.alpha
-        self.gamma         = args.gamma
-        self.epsilon       = args.epsilon
-        
-        self.Q             = Counter()
+            self.Q             = Counter()
             
     def getQfunction(self):
         return self.Q

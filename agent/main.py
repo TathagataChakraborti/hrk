@@ -58,6 +58,7 @@ def main():
     parser.add_argument('-y', '--alpha',       type=float, default=0.9,  help="Learning rate for RL agent; default = 0.9.")
     parser.add_argument('-d', '--gamma',       type=float, default=0.5,  help="Discount Factor for RL agent; default = 0.5.")
 
+    parser.add_argument('-w', '--refresh',     type=int,   default=0,    help="Show progress of learning agent.")
     parser.add_argument('-g', '--save',        action='store_true',      help="Save agent.")
 
     args  = parser.parse_args()    
@@ -79,7 +80,7 @@ def main():
         else:pass
 
         if args.save: agent.save()
-        print('Done.')
+        raw_input('Done >>')
 
             
 if __name__ == '__main__':
