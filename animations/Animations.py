@@ -280,12 +280,13 @@ class Number(Animation):
         Animation.__init__(self, data_id, probability, duration)
 
         self.images = []
-        for i in range(1,10):
+        for i in range(10):
             self.images.append(plt.imread('{}/numbers/{}.png'.format(_PACKAGE_PATH, i)))
 
+        self.switch    = False
         self.number    = 2
         self.fig       = plt.figure(figsize=(8,8))
-
+        
         self.fig.patch.set_facecolor('white')
         self.__set_parameters__()
         
@@ -294,27 +295,34 @@ class Number(Animation):
         
         plt.clf()
         plt.axis('off')
+        
+        self.switch = not self.switch
 
-        if random.random() > self.probability:
+        if self.switch:
 
-            img = self.images[self.number-1]
-            self.__log__(_POSITIVE_MARKER)
-            
+            img = self.images[0]
+
         else:
+            
+            if random.random() > self.probability:
+                
+                img = self.images[self.number]
+                self.__log__(_POSITIVE_MARKER)
+            
+            else:
 
-            temp_image_list = copy.deepcopy(self.images)
-            temp_image_list.pop(self.number-1)
-            img             = random.choice(temp_image_list)
-            self.__log__(_NEGATIVE_MARKER)
+                temp_image_list = copy.deepcopy(self.images)
+                temp_image_list.pop(self.number)
+                img             = random.choice(temp_image_list[1:])
+                self.__log__(_NEGATIVE_MARKER)
 
+            if frame_number/2 == self.frames - 1:
+                self.__log__(_END_MARKER)
+                self.fig.patch.set_facecolor('black')
+        
         img = plt.imshow(img, cmap=plt.cm.Reds_r)
 
-        #time.sleep(1)
 
-        if frame_number == self.frames - 1:
-            self.__log__(_END_MARKER)
-            self.fig.patch.set_facecolor('black')
-        
 
 class Random(Animation):
 
@@ -358,8 +366,7 @@ class Random(Animation):
             self.__log__(_END_MARKER)
             self.fig.patch.set_facecolor('black')
 
-
-
+         
 '''
 main method
 '''
