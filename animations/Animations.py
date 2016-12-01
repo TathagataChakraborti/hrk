@@ -326,7 +326,7 @@ class Random(Animation):
         for i in range(1,10):
             self.images.append(plt.imread('{}/numbers/{}.png'.format(_PACKAGE_PATH, i)))
 
-        self.number    = 2
+        self.number    = random.choice(range(1,10))#2
         self.fig       = plt.figure(figsize=(8,8))
         self.target_found = False
         self.fig.patch.set_facecolor('white')
