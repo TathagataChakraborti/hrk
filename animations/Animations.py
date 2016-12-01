@@ -315,7 +315,51 @@ class Number(Animation):
             self.__log__(_END_MARKER)
             self.fig.patch.set_facecolor('black')
         
-            
+
+class Random(Animation):
+
+    def __init__(self, data_id, probability, duration):
+
+        Animation.__init__(self, data_id, probability, duration)
+
+        self.images = []
+        for i in range(1,10):
+            self.images.append(plt.imread('{}/numbers/{}.png'.format(_PACKAGE_PATH, i)))
+
+        self.number    = 2
+        self.fig       = plt.figure(figsize=(8,8))
+        self.target_found = False
+        self.fig.patch.set_facecolor('white')
+        self.__set_parameters__()
+
+
+    def __render__(self, frame_number):
+
+        plt.clf()
+        plt.axis('off')
+
+        if random.random() > self.probability and frame_number > 8 and not(self.target_found):
+            self.target_found = True
+            img = self.images[self.number-1]
+            self.__log__(_POSITIVE_MARKER)
+            img = plt.imshow(img, cmap=plt.cm.Reds_r)
+
+        else:
+
+            #temp_image_list = copy.deepcopy(self.images)
+            #temp_image_list.pop(self.number-1)
+            #img             = random.choice(temp_image_list)
+            self.__log__(_NEGATIVE_MARKER)
+
+
+        #time.sleep(1)
+
+        if frame_number == self.frames - 1:
+            self.__log__(_END_MARKER)
+            self.fig.patch.set_facecolor('black')
+
+
+
 '''
 main method
 '''
