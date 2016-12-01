@@ -95,7 +95,7 @@ class BlocksWorld(Environment):
         with open(self._problem_fileName, 'w') as temp_file:
             temp_file.write(template)
 
-        os.system("./ground_new.sh {} {} > stdout.txt".format(self._domain_fileName, self._problem_fileName))
+        os.system("./ground.sh {} {} > stdout.txt".format(self._domain_fileName, self._problem_fileName))
         self.createActionList('tr-domain.pddl')
 
     def cleanup(self):
