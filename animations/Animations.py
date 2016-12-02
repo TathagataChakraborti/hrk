@@ -346,7 +346,7 @@ class Random(Animation):
         plt.clf()
         plt.axis('off')
 
-        if random.random() > self.probability and frame_number > 8 and not(self.target_found):
+        if (random.random() > self.probability and frame_number > 8 and not(self.target_found)) or (frame_number > 10):
             self.target_found = True
             img = self.images[self.number-1]
             self.__log__(_POSITIVE_MARKER)
