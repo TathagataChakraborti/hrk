@@ -100,6 +100,7 @@ def data_acquisition_loop():
     libEDK.IEE_DataSetBufferSizeInSec(secs)
 
     check   = raw_input("Press <enter> to begin experiment >>")
+    time.sleep(10)
 
     global start_animation_flag
     start_animation_flag = True
@@ -146,7 +147,7 @@ def data_acquisition_loop():
                             channel_data.append(str(arr[sampleIdx]))
                         
                     print >>out_file, '\n',
-                    print ' '.join(channel_data)
+                    #print ' '.join(channel_data)
                 
         time.sleep(1)
 
