@@ -37,12 +37,18 @@ class Environment:
     def isGoal(self, state):
         return set(self.goalState.items()).issubset(set(state.items()))
 
-    def observeTransition(self, currentState, action):
+    def observeTransition(self, currentState, action, simulate_flag = True, bootstrap_flag = False):
 
-        nextState = self.__generate_next_state__(currentState, action)
-        reward    = self.__generate_reward__(currentState, action, nextState)
+        nextState = self.__generate_next_state__(currentState, action, simulate_flag)
+        reward    = self.__generate_reward__(currentState, action, nextState, simulate_flag, bootstrap_flag)
 
         return currentState, action, nextState, reward
+
+    def __generate_next_state__(self, state, actionName, simulate_flag):
+        raise NotImplementedError()
+        
+    def __generate_reward__(self, currentState, action, nextState, simulate_flag, bootstrap_flag):
+        raise NotImplementedError()
 
 
 '''
@@ -109,16 +115,33 @@ class BlocksWorld(Environment):
     def __executable__(self, state, actionName):
         return all([int(self.actionList[actionName].preconditions[var]) == state[var] for var in self.actionList[actionName].preconditions.keys()])
 
-    def __generate_next_state__(self, state, actionName):
-        new_state = copy.deepcopy(state)
-        for var in self.actionList[actionName].effects.keys():
-            new_state[var] = int(self.actionList[actionName].effects[var])
-        return new_state
-    
-    def __generate_reward__(self, currentState, action, nextState):
-        if self.isGoal(nextState): return 100.0
-        else:                      return -1.0
+    def __generate_next_state__(self, state, actionName, simulate_flag):
 
+        if simulate_flag:
+
+            new_state = copy.deepcopy(state)
+            for var in self.actionList[actionName].effects.keys():
+                new_state[var] = int(self.actionList[actionName].effects[var])
+            return new_state
+
+        else:
+
+            # launch fetch routines on thread #
+            raise NotImplementedError()
+        
+    def __generate_reward__(self, currentState, action, nextState, simulate_flag, bootstrap_flag):
+
+        if bootstrap_flag:
+
+            # pause loop here, log anagha's output #
+            raise NotImplementedError()
+
+        else:
+            
+            if self.isGoal(nextState): return 100.0
+            else:                      return -1.0
+
+            
     '''
     Class :: pddl action instance
     '''
@@ -182,7 +205,7 @@ def main():
 
     else:pass
     
-    #env.cleanup()
+    env.cleanup()
     
 if __name__ == '__main__':
     main()

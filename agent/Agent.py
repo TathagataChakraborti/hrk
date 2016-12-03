@@ -49,6 +49,9 @@ class RandomAgent:
             
             self.__epoch_number__ = 0
 
+            self.__bootstrap__    = args.bootstrap
+            self.__simulate__     = args.simulate
+            
             
     def getName(self):
         return '{}_{}'.format(self.__agentName__, self.__agentID__)
@@ -89,7 +92,7 @@ class RandomAgent:
         while not blocksworld_instance.isGoal(newState):
 
             nextAction                         = self.__getNextAction__(blocksworld_instance, newState)
-            oldState, action, newState, reward = blocksworld_instance.observeTransition(newState, nextAction)
+            oldState, action, newState, reward = blocksworld_instance.observeTransition(newState, nextAction, self.__simulate__, self.__bootstrap__)
 
             plan.append(action)
             utility += reward
