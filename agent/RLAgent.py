@@ -29,12 +29,12 @@ class RLAgent(RandomAgent):
         if not args.boot:
 
             self.__agentName__ = 'RLAgent'
-    
+            self.Q             = Counter()
+            
             self.alpha         = args.alpha
             self.gamma         = args.gamma
             self.epsilon       = args.epsilon
         
-            self.Q             = Counter()
             
     def getQfunction(self):
         return self.Q
@@ -65,7 +65,7 @@ class RLAgent(RandomAgent):
         for item in problem_instance.getGoalState().items():
             new_state['goal+'+item[0]] = item[1]
 
-            return numpy.random.choice(problem_instance.getActions(state), p = p_norm([self.Q[new_state.freeze(), action] for action in problem_instance.getActions(state)]))\
+        return numpy.random.choice(problem_instance.getActions(state), p = p_norm([self.Q[new_state.freeze(), action] for action in problem_instance.getActions(state)]))\
             if random.random() < self.epsilon and self.__train_flag__\
                else list(problem_instance.getActions(state))[random.choice(numpy.argwhere([self.Q[new_state.freeze(), action] for action in problem_instance.getActions(state)]
                                                                                           == numpy.amax([self.Q[new_state.freeze(), action]

@@ -41,25 +41,21 @@ class RandomAgent:
         
             self.__agentName__    = 'RandomAgent'
             self.__agentID__      = random.randint(0,99999)
-            
-            self.__train_flag__   = args.train
-            self.__test_flag__    = args.test
-            self.__max_episode__  = args.threshold
-            self.__refresh__      = args.refresh
-            
             self.__epoch_number__ = 0
+            
+        self.__train_flag__   = args.train
+        self.__test_flag__    = args.test
+        self.__max_episode__  = args.threshold
+        self.__refresh__      = args.refresh
+            
 
-            self.__bootstrap__    = args.bootstrap
-            self.__simulate__     = args.simulate
-            
-            
     def getName(self):
         return '{}_{}'.format(self.__agentName__, self.__agentID__)
     
     def __update_parameters__(self):
         return
 
-    def train(self, N, replay, simulate_flag):
+    def train(self, N, replay, simulate_flag = True, bootstrap_flag = False):
 
         plan_length_list = []
         if self.__refresh__:
@@ -72,17 +68,17 @@ class RandomAgent:
                 self.__epoch_number__ += 1
                 self.__update_parameters__()
 
-                goal    = random.randint(2,3)
-                plan, u = self.execute(goal, simulate_flag)
+                goal    = 3#random.randint(2,3)
+                plan, u = self.execute(goal, simulate_flag, bootstrap_flag)
 
                 plan_length_list.append(len(plan))
                 
-                print '{} :: replay = {}/{}; goal = {}; plan length = {}; utility = {}'.format(self.getName(), num_replay, replay, goal, len(plan), u)
+                print '{} :: episode = {} replay = {}/{}; goal = {}; plan length = {}; utility = {}'.format(self.getName(), self.__epoch_number__, num_replay, replay, goal, len(plan), u)
 
                 if not self.__epoch_number__ % self.__refresh__: self.plot(plan_length_list)
 
                 
-    def execute(self, goal, simulate_flag):
+    def execute(self, goal, simulate_flag = True, bootstrap_flag = False):
 
         blocksworld_instance = BlocksWorld(goal)
         newState             = blocksworld_instance.getCurrentState()
@@ -92,16 +88,16 @@ class RandomAgent:
         while not blocksworld_instance.isGoal(newState):
 
             nextAction                         = self.__getNextAction__(blocksworld_instance, newState)
-            oldState, action, newState, reward = blocksworld_instance.observeTransition(newState, nextAction, self.__simulate__, self.__bootstrap__)
+            oldState, action, newState, reward = blocksworld_instance.observeTransition(newState, nextAction, simulate_flag, bootstrap_flag)
 
             plan.append(action)
             utility += reward
             
-            if not self.__train_flag__ and not self.__test_flag__: print '>>', action, reward
-
-            if self.__train_flag__:
+            #if not self.__train_flag__ and not self.__test_flag__: print '>>', action, reward
+            
+            if self.__train_flag__ or bootstrap_flag:
                 self.__learn__(oldState, action, newState, reward, blocksworld_instance)
-
+                
             if len(plan) >= self.__max_episode__: break
             
         blocksworld_instance.cleanup()            
@@ -118,6 +114,35 @@ class RandomAgent:
         os.system('rm -f {}'.format(fileName))
         pickle.dump(self, open(fileName, 'wb'))
 
+        
+    def showQ(self):
+
+        qq = [item[1] for item in self.getQfunction().items()]
+
+        q_pos  = [item[1] if item[1] > 0 else 0 for item in self.getQfunction().items()]
+        q_neg  = [item[1] if item[1] < 0 else 0 for item in self.getQfunction().items()]
+
+        fig = plt.figure()
+
+        q_zero = [max(qq) if item[1] == 0 else 0 for item in self.getQfunction().items()]
+        line1, = plt.plot(range(len(qq)), q_zero, color='red')
+
+        q_zero = [min(qq) if item[1] == 0 else 0 for item in self.getQfunction().items()]
+        line2, = plt.plot(range(len(qq)), q_zero, color='red')
+
+        line3, = plt.plot(range(len(qq)), qq, color='blue')
+        line4, = plt.plot(range(len(qq)), q_neg, color='green')
+
+        ax = fig.add_subplot(111)
+        ax.set_xlim([0, len(qq)])
+        ax.set_ylim([min(qq), max(qq)])
+        ax.set_xlabel('states -->')
+        ax.set_ylabel('value of Q function -->')
+        plt.legend([line1, line3, line4], ['positive Q value', 'negative Q value', 'unexplored'])
+
+        fig.show()
+
+        
     def plot(self, plan_length_list):
 
         plt.cla()

@@ -71,7 +71,6 @@ class BlocksWorld(Environment):
         self.setGoal(args[0])
         self.write_to_problem()
 
-            
     def setGoal(self, height):
         self.goalState = Counter({'tower{}-formed'.format(height) : 1})
 
@@ -134,13 +133,20 @@ class BlocksWorld(Environment):
         if bootstrap_flag:
 
             # pause loop here, log anagha's output #
-            raise NotImplementedError()
+            # raise NotImplementedError()
+
+            #print action
+            #print 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30
+            #print 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30\
+                #- 1000*(1-int(nextState['clear red'])) - 1000 * int(action == 'stack red' or action == 'pickup red')
+
+            return 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30\
+                - 1000*(1-int(nextState['clear red'])) - 1000 * int(action == 'stack red' or action == 'pickup red')
 
         else:
-            
-            if self.isGoal(nextState): return 100.0
-            else:                      return -1.0
 
+            return 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30
+            
             
     '''
     Class :: pddl action instance
