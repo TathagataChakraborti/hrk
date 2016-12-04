@@ -33,7 +33,7 @@ using namespace std;
 #include "IedkErrorCode.h"
 #include "IEmoStatePerformanceMetric.h"
 
-void CaculateScale(double& rawScore, double& maxScale,
+void CalculateScale(double& rawScore, double& maxScale,
                    double& minScale, double& scaledScore);
 
 string logPerformanceMetricScore(unsigned int userID,
@@ -55,6 +55,8 @@ int main(int argc, char** argv) {
 	int option = 0;
 	int state  = 0;
 	std::string input;
+	string ADDR_STRING = "0.0.0.0"; // Change the inet_address here
+	string PORT_NUMBER = 8888;  // Change the port address here
 
 	try {
         std::cout << "==================================================================="
@@ -125,9 +127,9 @@ int main(int argc, char** argv) {
 		printf("Socket created.\n");
 
 
-		server.sin_addr.s_addr = inet_addr("0.0.0.0");
+		server.sin_addr.s_addr = inet_addr(ADDR_STRING);
 		server.sin_family = AF_INET;
-		server.sin_port = htons(80);
+		server.sin_port = htons(PORT_NUMBER);
 
 		//Connect to remote server
 		if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0)
@@ -241,7 +243,7 @@ string logPerformanceMetricScore(unsigned int userID,
 		 undefinedFlag = true;
 	}
 	else{
-		CaculateScale(rawScore,maxScale, minScale,scaledScore);
+		CalculateScale(rawScore,maxScale, minScale,scaledScore);
 		stressScore = scaledScore;
 	}		
 
@@ -253,7 +255,7 @@ string logPerformanceMetricScore(unsigned int userID,
 		undefinedFlag = true;
 	}
 	else{
-		CaculateScale(rawScore,maxScale, minScale,scaledScore);
+		CalculateScale(rawScore,maxScale, minScale,scaledScore);
 		engagementScore = scaledScore;
 	}	
 
@@ -265,7 +267,7 @@ string logPerformanceMetricScore(unsigned int userID,
 		undefinedFlag = true;
 	}
 	else{
-		CaculateScale(rawScore,maxScale, minScale,scaledScore);
+		CalculateScale(rawScore,maxScale, minScale,scaledScore);
 		relaxationScore = scaledScore;
 	}	
 
@@ -278,7 +280,7 @@ string logPerformanceMetricScore(unsigned int userID,
 		undefinedFlag = true;
 	}
 	else{
-		CaculateScale(rawScore,maxScale, minScale,scaledScore);
+		CalculateScale(rawScore,maxScale, minScale,scaledScore);
 		excitementScore = scaledScore;
 	}
 
@@ -290,7 +292,7 @@ string logPerformanceMetricScore(unsigned int userID,
 		undefinedFlag = true;
 	}
 	else{
-		CaculateScale(rawScore,maxScale, minScale,scaledScore);
+		CalculateScale(rawScore,maxScale, minScale,scaledScore);
 		interestScore = scaledScore;
 	}
 	
@@ -310,7 +312,7 @@ string logPerformanceMetricScore(unsigned int userID,
 	return message;
 }
 
-void CaculateScale (double& rawScore, double& maxScale,
+void CalculateScale (double& rawScore, double& maxScale,
                     double& minScale, double& scaledScore){
 	
 	if (rawScore<minScale)
