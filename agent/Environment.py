@@ -13,6 +13,11 @@ Packages
 
 import os, re, copy
 from utils import *
+import thread
+from Queue import Queue
+
+REWARD_SIZE = 14
+
 
 '''
 Class :: Environment
@@ -67,9 +72,37 @@ class BlocksWorld(Environment):
 
         with open('domain/init.dat', 'r') as temp:
             self.currentState = Counter({item.strip() : 1 for item in temp.read().split('\n')})
-
+        self.robot_action_queue = Queue()
+        self.reward_queue = Queue()
+        robot_action_thread = thread.start_new_thread(self.reward_server, (self.reward_queue))
         self.setGoal(args[0])
         self.write_to_problem()
+
+    def reward_server(self, reward_queue):
+        '''
+        base code from https://www.tutorialspoint.com/python/python_networking.htm
+        '''
+        s = socket.socket()         # Create a socket object
+        host = socket.gethostname() # Get local machine name
+        port = 12345                # Reserve a port for your service.
+        s.bind((host, port))        # Bind to the port
+
+        s.listen(5)                 # Now wait for client connection.
+        old_timestamp = ''
+        while True:
+            time.sleep(0.5)
+            reward_queue.clear()
+            c, addr = s.accept()     # Establish connection with client.
+            data = c.recv(REWARD_SIZE)
+            new_timestamp = data[1:6]
+            if new_timestamp != old_timestamp:
+                old_timestamp = new_timestamp
+                try:
+                    reward = float(data[7:13])
+                    reward_queue.put(reward)
+                except:
+                    pass
+        
 
     def setGoal(self, height):
         self.goalState = Counter({'tower{}-formed'.format(height) : 1})
@@ -114,6 +147,10 @@ class BlocksWorld(Environment):
     def __executable__(self, state, actionName):
         return all([int(self.actionList[actionName].preconditions[var]) == state[var] for var in self.actionList[actionName].preconditions.keys()])
 
+    def execute_action(self, state, actionName, simulate_flag, result_queue):
+        self.robot_interface.get_next_state(state, actionName, simulate_flag)
+        result_queue.put('ACTION_COMPLETED')
+
     def __generate_next_state__(self, state, actionName, simulate_flag):
 
         if simulate_flag:
@@ -124,9 +161,10 @@ class BlocksWorld(Environment):
             return new_state
 
         else:
-
+            self.robot_action_queue.clear()
+            robot_action_thread = thread.start_new_thread(self.execute_action, (state, actionName, simulate_flag, self.robot_action_queue))
             # launch fetch routines on thread #
-            raise NotImplementedError()
+            #raise NotImplementedError()
         
     def __generate_reward__(self, currentState, action, nextState, simulate_flag, bootstrap_flag):
 
@@ -134,14 +172,22 @@ class BlocksWorld(Environment):
 
             # pause loop here, log anagha's output #
             # raise NotImplementedError()
+            total_reward = 0
+            while self.robot_action_queue.empty():
+                while self.reward_queue.empty():
+                    pass
+                total_reward += self.reward_queue.get()
+
+            self.robot_action_queue.clear()
+            return total_reward + 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30
 
             #print action
             #print 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30
             #print 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30\
                 #- 1000*(1-int(nextState['clear red'])) - 1000 * int(action == 'stack red' or action == 'pickup red')
 
-            return 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30\
-                - 1000*(1-int(nextState['clear red'])) - 1000 * int(action == 'stack red' or action == 'pickup red')
+#            return 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30\
+#                - 1000*(1-int(nextState['clear red'])) - 1000 * int(action == 'stack red' or action == 'pickup red')
 
         else:
 
