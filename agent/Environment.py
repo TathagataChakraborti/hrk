@@ -77,12 +77,12 @@ class BlocksWorld(Environment):
             self.currentState = Counter({item.strip() : 1 for item in temp.read().split('\n')})
         self.robot_action_queue = Queue()
         self.reward_queue = Queue()
-        robot_action_thread = thread.start_new_thread(self.reward_server, (self.reward_queue,))
+        robot_action_thread = thread.start_new_thread(self.reward_server, (self.reward_queue,self.robot_action_queue,))
 	self.robot_interface = RobotInterface.RobotInterface()
         self.setGoal(args[0])
         self.write_to_problem()
 
-    def reward_server(self, reward_queue):
+    def reward_server(self, reward_queue, robot_action_queue):
         '''
         base code from https://www.tutorialspoint.com/python/python_networking.htm
         '''
@@ -104,7 +104,8 @@ class BlocksWorld(Environment):
                 old_timestamp = new_timestamp
                 try:
                     reward = float(data[7:13])
-                    reward_queue.put(reward)
+                    if not robot_action_queue.empty():
+                       reward_queue.put(reward)
                 except:
                     pass
         
@@ -152,18 +153,21 @@ class BlocksWorld(Environment):
     def __executable__(self, state, actionName):
         return all([int(self.actionList[actionName].preconditions[var]) == state[var] for var in self.actionList[actionName].preconditions.keys()])
 
-    def execute_action(self, state, actionName, simulate_flag, result_queue):
+    def execute_action(self, state, actionName, simulate_flag):
         self.robot_interface.get_next_state(state, actionName)
-        result_queue.put('ACTION_COMPLETED')
 
     def __generate_next_state__(self, state, actionName, simulate_flag):
 
         if not simulate_flag:
+            while not self.reward_queue.empty():
+                self.reward_queue.get()
             while not self.robot_action_queue.empty():
                 self.robot_action_queue.get()
             #robot_action_thread = thread.start_new_thread(self.execute_action, (state, actionName, simulate_flag, self.robot_action_queue))
-            self.execute_action(state, actionName, simulate_flag, self.robot_action_queue)
             #robot_action_thread.join()
+            self.robot_action_queue.put('ACTION_START')
+            self.execute_action(state, actionName, simulate_flag, self.robot_action_queue)
+            self.robot_action_queue.get()
  
         new_state = copy.deepcopy(state)
         for var in self.actionList[actionName].effects.keys():
@@ -180,13 +184,9 @@ class BlocksWorld(Environment):
             # pause loop here, log anagha's output #
             # raise NotImplementedError()
             total_reward = 0
-            while self.robot_action_queue.empty():
-                while self.reward_queue.empty():
-                    pass
+            while not self.reward_queue.empty():
                 total_reward += self.reward_queue.get()
 
-            while not self.robot_action_queue.empty():
-                self.robot_action_queue.get()
             return total_reward + 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30
 
             #print action
