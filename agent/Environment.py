@@ -15,6 +15,9 @@ import os, re, copy
 from utils import *
 import thread
 from Queue import Queue
+import socket
+import time
+import robot_code.RobotInterface as RobotInterface
 
 REWARD_SIZE = 14
 
@@ -74,7 +77,8 @@ class BlocksWorld(Environment):
             self.currentState = Counter({item.strip() : 1 for item in temp.read().split('\n')})
         self.robot_action_queue = Queue()
         self.reward_queue = Queue()
-        robot_action_thread = thread.start_new_thread(self.reward_server, (self.reward_queue))
+        robot_action_thread = thread.start_new_thread(self.reward_server, (self.reward_queue,))
+	self.robot_interface = RobotInterface.RobotInterface()
         self.setGoal(args[0])
         self.write_to_problem()
 
@@ -91,7 +95,8 @@ class BlocksWorld(Environment):
         old_timestamp = ''
         while True:
             time.sleep(0.5)
-            reward_queue.clear()
+            while not reward_queue.empty():
+               reward_queue.get()
             c, addr = s.accept()     # Establish connection with client.
             data = c.recv(REWARD_SIZE)
             new_timestamp = data[1:6]
@@ -148,22 +153,24 @@ class BlocksWorld(Environment):
         return all([int(self.actionList[actionName].preconditions[var]) == state[var] for var in self.actionList[actionName].preconditions.keys()])
 
     def execute_action(self, state, actionName, simulate_flag, result_queue):
-        self.robot_interface.get_next_state(state, actionName, simulate_flag)
+        self.robot_interface.get_next_state(state, actionName)
         result_queue.put('ACTION_COMPLETED')
 
     def __generate_next_state__(self, state, actionName, simulate_flag):
 
-        if simulate_flag:
+        if not simulate_flag:
+            while not self.robot_action_queue.empty():
+                self.robot_action_queue.get()
+            #robot_action_thread = thread.start_new_thread(self.execute_action, (state, actionName, simulate_flag, self.robot_action_queue))
+            self.execute_action(state, actionName, simulate_flag, self.robot_action_queue)
+            #robot_action_thread.join()
+ 
+        new_state = copy.deepcopy(state)
+        for var in self.actionList[actionName].effects.keys():
+            new_state[var] = int(self.actionList[actionName].effects[var])
+        return new_state
 
-            new_state = copy.deepcopy(state)
-            for var in self.actionList[actionName].effects.keys():
-                new_state[var] = int(self.actionList[actionName].effects[var])
-            return new_state
-
-        else:
-            self.robot_action_queue.clear()
-            robot_action_thread = thread.start_new_thread(self.execute_action, (state, actionName, simulate_flag, self.robot_action_queue))
-            # launch fetch routines on thread #
+           # launch fetch routines on thread #
             #raise NotImplementedError()
         
     def __generate_reward__(self, currentState, action, nextState, simulate_flag, bootstrap_flag):
@@ -178,7 +185,8 @@ class BlocksWorld(Environment):
                     pass
                 total_reward += self.reward_queue.get()
 
-            self.robot_action_queue.clear()
+            while not self.robot_action_queue.empty():
+                self.robot_action_queue.get()
             return total_reward + 1000*int(self.isGoal(nextState)) + 5*(5-len([item for item in nextState.items() if ('ontable' in item[0]) and item[1]])) - 30
 
             #print action

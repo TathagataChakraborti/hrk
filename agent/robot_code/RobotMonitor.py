@@ -3,7 +3,8 @@ import tf
 import sys
 import copy
 import time
-
+import rospy
+from head_bob import BobHead
 
 MONIT_INIT_TIME = 100
 
@@ -13,10 +14,12 @@ class Monitor:
         self.object_map = object_map
         self.location_markers = location_markers
         self.object_pos = {obj:[] for obj in self.object_map.keys()}
-        self.location_pos = {marker:[] for marker in self.location_markers.keys()}
+        self.location_pos = {marker:[] for marker in self.location_markers}
+        self.tf_listener = tf.TransformListener()
+        self.bob = BobHead()
         self.init_location_markers()
-        bob = BobHead()
         self.monit()
+        print self.object_pos
 
 
     def get_marker_position(self, marker):
@@ -36,8 +39,13 @@ class Monitor:
     def init_location_markers(self):
         all_markers_not_found = True
         start_time = time.time()
+        head_moves = [self.bob.tilt_normal, self.bob.tilt_up, self.bob.tilt_down]
+        head_move_id = 0
         while all_markers_not_found:
+            head_move_id = (head_move_id + 1) % len(head_moves)
             all_markers_not_found = False
+            head_moves[head_move_id]()
+            print self.location_pos
             for marker in self.location_markers:
                 pos, orient = self.get_marker_position(marker)
                 if len(pos) == 0:
@@ -48,17 +56,17 @@ class Monitor:
                 raise StandardError
 
     def monit(self):
-        bob.tilt_normal()
+        self.bob.tilt_normal()
         self.update_obj_positions()
-        bob.tilt_up()
+        self.bob.tilt_up()
         self.update_obj_positions()
-        bob.tilt_down()
+        self.bob.tilt_down()
         self.update_obj_positions()
 
 
     def update_obj_positions(self):
         for obj in self.object_pos.keys():
-            pos, orient = self.get_marker_position(self.object_map['obj'])
+            pos, orient = self.get_marker_position(self.object_map[obj])
             if len(pos) != 0:
                 self.object_pos[obj] = list(pos)
 

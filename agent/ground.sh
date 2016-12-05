@@ -13,4 +13,4 @@ $PR2PLAN_PATH -d $1 -i $2 -o ./obs.dat > stdout.txt
 cat pr-domain.pddl | grep -vE "(EXPLAIN|increase|functions)" > tr-domain.pddl
 cat pr-problem.pddl | grep -vE "(EXPLAIN|increase|metric)" > tr-problem.pddl
 
-./fdplan.sh tr-domain.pddl tr-problem.pddl
+#./fdplan.sh tr-domain.pddl tr-problem.pddl
