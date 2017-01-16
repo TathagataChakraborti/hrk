@@ -20,6 +20,7 @@ import time
 import robot_code.RobotInterface as RobotInterface
 
 REWARD_SIZE = 14
+CLOUD_NODE = '23.99.25.146'
 
 
 '''
@@ -82,33 +83,49 @@ class BlocksWorld(Environment):
         self.setGoal(args[0])
         self.write_to_problem()
 
+
     def reward_server(self, reward_queue, robot_action_queue):
         '''
-        base code from https://www.tutorialspoint.com/python/python_networking.htm
+         Base code taken from https://www.cloudamqp.com/blog/2015-05-21-part2-3-rabbitmq-for-beginners_example-and-sample-code-python.html
         '''
-        s = socket.socket()         # Create a socket object
-        host = socket.gethostname() # Get local machine name
-        port = 12345                # Reserve a port for your service.
-        s.bind((host, port))        # Bind to the port
+        import pika, os, urlparse
 
-        s.listen(5)                 # Now wait for client connection.
-        old_timestamp = ''
-        while True:
-            time.sleep(0.5)
-            while not reward_queue.empty():
+        def save_reward(ch, method, properties, body):
+            global reward_queue
+            global robot_action_queue
+
+	    while not reward_queue.empty():
                reward_queue.get()
-            c, addr = s.accept()     # Establish connection with client.
-            data = c.recv(REWARD_SIZE)
-            new_timestamp = data[1:6]
+
+            new_timestamp = body[1:6]
+
             if new_timestamp != old_timestamp:
                 old_timestamp = new_timestamp
                 try:
-                    reward = float(data[7:13])
+                    reward = float(body[7:13])
                     if not robot_action_queue.empty():
                        reward_queue.put(reward)
                 except:
                     pass
-        
+
+
+
+        user = "USER1" # XXX move to a config file
+        queue_name = user + ':' + 'REWARD_QUEUE'
+        url_str = os.environ.get('CLOUDAMQP_URL', 'amqp://yochan:yochan@'+CLOUD_NODE+'//')
+        url = urlparse.urlparse(url_str)
+        params = pika.ConnectionParameters(host=url.hostname, virtual_host=url.path[1:],
+        credentials=pika.PlainCredentials(url.username, url.password))
+        connection = pika.BlockingConnection(params)
+        channel = connection.channel()
+        channel.queue_declare(queue=queue_name)
+        channel.basic_consume(save_reward,
+                              queue=queue_name,
+                              no_ack=True)
+        print(" [x] Waiting for Msgs")
+        channel.start_consuming()
+
+
 
     def setGoal(self, height):
         self.goalState = Counter({'tower{}-formed'.format(height) : 1})
