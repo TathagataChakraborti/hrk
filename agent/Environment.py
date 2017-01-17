@@ -17,7 +17,7 @@ import thread
 from Queue import Queue
 import socket
 import time
-import robot_code.RobotInterface as RobotInterface
+#import robot_code.RobotInterface as RobotInterface
 
 REWARD_SIZE = 14
 CLOUD_NODE = '23.99.25.146'
@@ -78,8 +78,8 @@ class BlocksWorld(Environment):
             self.currentState = Counter({item.strip() : 1 for item in temp.read().split('\n')})
         self.robot_action_queue = Queue()
         self.reward_queue = Queue()
-        robot_action_thread = thread.start_new_thread(self.reward_server, (self.reward_queue,self.robot_action_queue,))
-	self.robot_interface = RobotInterface.RobotInterface()
+        #robot_action_thread = thread.start_new_thread(self.reward_server, (self.reward_queue,self.robot_action_queue,))
+	#self.robot_interface = RobotInterface.RobotInterface()
         self.setGoal(args[0])
         self.write_to_problem()
 
@@ -123,7 +123,12 @@ class BlocksWorld(Environment):
                               queue=queue_name,
                               no_ack=True)
         print(" [x] Waiting for Msgs")
-        channel.start_consuming()
+        while True:
+            try:
+                channel.start_consuming()
+            except IOError as e:
+                if e.errno != errno.EINTR:
+                    raise
 
 
 
