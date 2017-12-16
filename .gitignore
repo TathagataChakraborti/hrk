@@ -1,7 +1,7 @@
 # emotiv proprietary
-Github_Advanced/bin/*
-Github_Advanced/lib/*
-Github_Advanced/include/*
+./*/Github_Advanced/bin/*
+./*/Github_Advanced/lib/*
+./*/Github_Advanced/include/*
 
 # data files
 *.csv

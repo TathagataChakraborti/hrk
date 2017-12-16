@@ -1,6 +1,0 @@
-objects: ['b1','b2', 'b3', 'b4', 'b5', 'b6'] 
-location_markers: ['ar_marker_15']
-random_blocks: ['X']
-marker_map: {'b1': 'ar_marker_6', 'b2': 'ar_marker_5', 'b3':'ar_marker_4', 'b4':'ar_marker_3', 'b5': 'ar_marker_2', 'b6': 'ar_marker_0'}
-letter_map: {'b1': 'N', 'b2': 'A', 'b3': 'M', 'b4': 'T', 'b5': 'X', 'b6': 'E'}
-block_map: {'A': ['b2'], 'M': ['b3'], 'N': ['b1'], 'T': ['b4'], 'E': ['b6'], 'X': ['b5']}
